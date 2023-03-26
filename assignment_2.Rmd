@@ -1,0 +1,99 @@
+---
+title: "assignment_2"
+author: "Timothy Roy"
+date: '2023-03-26'
+output: html_document
+---
+### Task 1 - Product Orders
+libraries
+'plyr'
+'arules'
+‘RColorBrewer’
+
+#### a. Data Cleaning
+
+```{r}
+library(plyr)
+library(arules)
+library(RColorBrewer)
+sd <- read.csv("store.csv")
+sd_ord_prod <- data.frame(sd$Order.ID, sd$Product.Name)
+colnames(sd_ord_prod) <- c("order.id", "product.name")
+sd_ord_prod$product.name <- gsub(",.*", "", sd_ord_prod$product.name)
+
+sd_ord_prod$order.id <- as.factor(sd_ord_prod$order.id)
+sd_ord_prod$product.name <- as.factor(sd_ord_prod$product.name)
+#head(sd_ord_prod)
+transaction_data <- ddply(sd_ord_prod, c("order.id"), function(df1)paste(df1$product.name, collapse= ", "))
+
+write.csv(transaction_data, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/transactions.csv", quote = FALSE, row.names = FALSE)
+
+```
+
+```{r}
+sd <- read.csv("store.csv")
+sd_order_cat <- data.frame(sd$Order.ID, sd$Sub.Category)
+colnames(sd_order_cat) <- c("order.id", "sub.category")
+
+sd_order_cat$order.id <- as.factor(sd_order_cat$order.id)
+sd_order_cat$sub.category <- as.factor(sd_order_cat$sub.category)
+#head(sd_ord_prod)
+cat_transaction_data <- ddply(sd_order_cat, c("order.id"), function(df1)paste(df1$sub.category, collapse= ", "))
+
+write.csv(cat_transaction_data, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/cat_transactions.csv", quote = FALSE, row.names = FALSE)
+```
+
+
+#### Apriori Algorith
+
+```{r}
+tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/transactions.csv", format ="basket", sep = ",")
+summary(tr)
+```
+
+```{r}
+itemFrequencyPlot(tr, topN = 20, type ="absolute", col = brewer.pal(8, 'Pastel2'), main ="Absolute Item Frequency Plot")
+```
+
+```{r}
+association_rules <- apriori(tr, parameter = list(supp =0.0001, conf = 0.1, maxlen = 5))
+
+
+```
+
+```{r}
+inspect(association_rules)
+```
+
+```{r}
+cat_tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/cat_transactions.csv", format ="basket", sep = ",")
+summary(cat_tr)
+```
+
+```{r}
+cat_association_rules <- apriori(cat_tr, parameter = list(supp =0.0005, conf = 0.5))
+```
+
+```{r}
+inspect(cat_association_rules)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
