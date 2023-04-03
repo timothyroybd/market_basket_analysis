@@ -99,54 +99,61 @@ write.csv(cat_transaction_data, "D:/Education/JKU 2023/Summer/Data Mining/market
 
 In the following the, the `transaction.csv` is being converted to transactions data so that it can be run using the apriori algorithm 
 
-```{r, echo=FALSE, include=FALSE}
+```{r}
 tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/transactions.csv", format ="basket", sep = ",")
-summary(tr)
+#summary(tr)
 ```
+
+
+Here it shows the list of top 20 product items by their frequency. 
 
 ```{r}
 itemFrequencyPlot(tr, topN = 20, type ="absolute", col = brewer.pal(8, 'Pastel2'), main ="Absolute Item Frequency Plot")
 ```
 
+In the following an association rule algorithm has been ran with 0.0001 support and .1 confidence. 0.0001 support means that customers bought an item set at least 0.01% of the whole transactions. In this case, this is not a significant. However, if support number is increased more than 0.01%, then the association rules do not reutrn any association. 
+
 ```{r}
-association_rules <- apriori(tr, parameter = list(supp =0.0001, conf = 0.1, maxlen = 5))
+prod_association_rules <- apriori(tr, parameter = list(supp =0.0001, conf = 0.1, maxlen = 10))
 
 
 ```
 
+The apriori algorithm produced 12 item set.They have a very low count and only the top 5 has a relatively high confidence level. Stables are often bought together with items such as chairs, vaccume, xerox, envelop, legal cart, post binders, table. Many of the items that are bought together with staples belong to office supply category. 
+
+Also, printer and Eldon box and Index Tab are bought together. Interstingly toaster and 3 hole punch are bought together. 
+
+As mentioned, these associations are not strong because their support count is low even for some of them the confidence level is higher. 
+
 ```{r}
-inspect(association_rules)
+#filter(store_data, Product.Name == "Staples" )
 ```
+
+
+```{r}
+inspect(prod_association_rules)
+```
+
 
 ```{r}
 cat_tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/cat_transactions.csv", format ="basket", sep = ",")
-summary(cat_tr)
 ```
 
 ```{r}
-cat_association_rules <- apriori(cat_tr, parameter = list(supp =0.0005, conf = 0.5))
+cat_association_rules <- apriori(cat_tr, parameter = list(supp =0.0006, conf = 0.5))
 ```
+The following table shows category sets and their frequency with confidence level. 0.6% of all the transactions has Binders category in association with  	{Fasteners, Labels, Machines}, {Appliances, Fasteners, Phones}, {Appliances, Fasteners, Paper}, {Appliances, Art, Fasteners} etc. 
 
 ```{r}
 inspect(cat_association_rules)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## c. Mining Multilevel Association Rule
 
-```{r cars}
-summary(cars)
+```{r}
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
