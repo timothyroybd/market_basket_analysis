@@ -4,35 +4,86 @@ author: "Timothy Roy"
 date: '2023-03-26'
 output: html_document
 ---
-### Task 1 - Product Orders
-libraries
-'plyr'
-'arules'
-‘RColorBrewer’
+```{r, echo=FALSE, include=FALSE}
+library(dplyr)
+library(arules)
+library(skimr)
+library(plyr)
+library(RColorBrewer)
 
-#### a. Data Cleaning
+```
+### Task 1 - Product Orders
+
+
+# Task 1: Product Orders
+
+## a. Data Preparation
+
+### a.1 Familiarize yourself with dataset for product orders
+
+
 
 ```{r}
-library(plyr)
-library(arules)
-library(RColorBrewer)
-sd <- read.csv("store.csv")
-sd_ord_prod <- data.frame(sd$Order.ID, sd$Product.Name)
+store_data <- read.csv("store.csv")
+head(store_data)
+```
+
+* This data shows information regarding customer's information such as city, country, product purchase, their quantity and sales and other order related information.
+
+### a.2 Document and eliminate any data quality issues that you may find (if you find any), i.e., perform the necessary data cleaning.
+
+```{r}
+store_data %>% skim()
+```
+
+
+* The data set has 51,290 rows of data which has 25 columns. 13 of columns are character and 12 is numeric.
+* Among numeric columns, only postal code has 41,296 missing values which would not be important for association mining. 
+* The data set has a minimum profit of -6,599.978 which is a negative number. However, profit's value can be negative. 
+* The minimum sales value is surprisingly low (0.444)!
+
+
+### a.3 Transforming the data 
+In order to run association algorithm among products, order.id and product.name could be used. order.id represents each unique order and product.name represents product name that is associated with this order.id. 
+
+First of all, order.id and product.name will be extracted from `store_data` and then it will be stored in a new data frame named `prod_df`. 
+
+Secondly, product qualification would be removed to find more match of products. If a product's name is "Kraft Clasp Envelope, Set of 50", then the "Set of 50" would be removed to increase the product count. 
+
+Thirdly, using `dplyr` library, product names have been concatenated based on order.id. And afterward, it was saved as a new file named `transactions.csv`. 
+
+```{r}
+#data frame with order.id and product.name have been created
+sd_ord_prod <- data.frame(store_data$Order.ID, store_data$Product.Name)
 colnames(sd_ord_prod) <- c("order.id", "product.name")
+
+#product description has been removed
 sd_ord_prod$product.name <- gsub(",.*", "", sd_ord_prod$product.name)
 
+#converted the columns into factors
 sd_ord_prod$order.id <- as.factor(sd_ord_prod$order.id)
 sd_ord_prod$product.name <- as.factor(sd_ord_prod$product.name)
-#head(sd_ord_prod)
+
+#using ddply library, based on user ID, the product names concatenated. 
+  #head(sd_ord_prod)
 transaction_data <- ddply(sd_ord_prod, c("order.id"), function(df1)paste(df1$product.name, collapse= ", "))
 
+#afterwards the file has been saved as csv format
 write.csv(transaction_data, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/transactions.csv", quote = FALSE, row.names = FALSE)
 
 ```
 
+
+In order to run association algorithm among categories, order.id and sub.category could be used. order.id represents each unique order and sub.category represents category name that is associated with this order.id. 
+
+First of all, order.id and sub.category will be extracted from `store_data` and then it will be stored in a new data frame named `prod_df`. 
+
+Secondly, using `dplyr` library, category names have been concatenated based on order.id. And afterward, it was saved as a new file named `cat_transaction.csv`. 
+
+
 ```{r}
-sd <- read.csv("store.csv")
-sd_order_cat <- data.frame(sd$Order.ID, sd$Sub.Category)
+
+sd_order_cat <- data.frame(store_data$Order.ID, store_data$Sub.Category)
 colnames(sd_order_cat) <- c("order.id", "sub.category")
 
 sd_order_cat$order.id <- as.factor(sd_order_cat$order.id)
@@ -44,9 +95,11 @@ write.csv(cat_transaction_data, "D:/Education/JKU 2023/Summer/Data Mining/market
 ```
 
 
-#### Apriori Algorith
+## b. Mining Association Rules
 
-```{r}
+In the following the, the `transaction.csv` is being converted to transactions data so that it can be run using the apriori algorithm 
+
+```{r, echo=FALSE, include=FALSE}
 tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/transactions.csv", format ="basket", sep = ",")
 summary(tr)
 ```
