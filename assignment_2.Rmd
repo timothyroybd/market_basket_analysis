@@ -44,9 +44,9 @@ store_data %>% skim()
 
 
 ### a.3 Transforming the data 
-In order to run association algorithm among products, order.id and product.name could be used. order.id represents each unique order and product.name represents product name that is associated with this order.id. 
+In order to run association algorithm among products, `order.id` and `product.name` could be used. `order.id` represents each unique order and `product.name` represents product name that is associated with this order.id. 
 
-First of all, order.id and product.name will be extracted from `store_data` and then it will be stored in a new data frame named `prod_df`. 
+First of all, `order.id` and `product.name` will be extracted from `store_data` and then it will be stored in a new data frame named `prod_df`. 
 
 Secondly, product qualification would be removed to find more match of products. If a product's name is "Kraft Clasp Envelope, Set of 50", then the "Set of 50" would be removed to increase the product count. 
 
@@ -119,7 +119,7 @@ prod_association_rules <- apriori(tr, parameter = list(supp =0.0001, conf = 0.1,
 
 ```
 
-The apriori algorithm produced 12 item set.They have a very low count and only the top 5 has a relatively high confidence level. Stables are often bought together with items such as chairs, vaccume, xerox, envelop, legal cart, post binders, table. Many of the items that are bought together with staples belong to office supply category. 
+The apriori algorithm produced 12 item set.They have a very low count and only the top 5 has a relatively high confidence level. Staples are often bought together with items such as chairs, vaccume, xerox, envelop, legal cart, post binders, table. Many of the items that are bought together with staples belong to office supply category. 
 
 Also, printer and Eldon box and Index Tab are bought together. Interstingly toaster and 3 hole punch are bought together. 
 
@@ -153,7 +153,129 @@ inspect(cat_association_rules)
 ## c. Mining Multilevel Association Rule
 
 ```{r}
+library(arules)
+df <- read.csv("store.csv")
 
+n_df <- data.frame(df$Order.ID, df$Sub.Category, df$Product.Name)
+colnames(n_df) <- c("ord.id", "cat", "prod")
+
+n_df$prod <- gsub(",.*", "", n_df$prod)
+
+n_df_agg <- aggregate(prod ~ ord.id + cat, data = n_df, toString)
+
+n_df_agg <- n_df_agg[,-1]
+#multilevel <- addAggregate(n_df_agg, "cat")
+
+
+#
+#itemInfo(trans)
+
+head(n_df_agg)
+fin <-  paste(n_df_agg$cat, n_df_agg$prod, sep = ", ")
+#head(fin)
+#write.csv(fin, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/test.csv", quote = FALSE, row.names = FALSE)
+
+trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/test.csv", format ="basket", sep = ",")
+
+rules <- apriori(trans, parameter = list(supp = 0.001, conf = 0.5))
+inspect(rules)
+
+```
+
+
+
+
+# Task 2: Health Data
+
+## a. Data Preparation
+
+### a.1 Familiarize yourself with dataset for product orders
+
+```{r}
+health_df <- read.csv("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/health.csv")
+
+
+```
+
+```{r}
+library(dplyr)
+#creating symptoms data frame
+sdf <- filter(health_df, type == "S")
+head(sdf, 10)
+```
+
+```{r}
+#conditions data frame
+cdf <- filter(health_df, type == "C")
+head(cdf,12)
+```
+
+```{r}
+#treatment dataframe
+tdf <- filter(health_df, type == "T")
+head(tdf, 12)
+```
+
+```{r}
+# symptoms aggregation
+sdf$reportid <- as.character(sdf$reportid)
+
+```
+
+```{r}
+sdf_agg <- aggregate(name ~ reportid, data = sdf, toString)
+
+sdf_agg <- sdf_agg[,-1]
+write.csv(sdf_agg, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/s.csv", quote = FALSE, row.names = FALSE)
+
+```
+
+```{r}
+cdf_agg <- aggregate(name ~ reportid, data = cdf, toString)
+
+cdf_agg <- cdf_agg[,-1]
+write.csv(cdf_agg, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/c.csv", quote = FALSE, row.names = FALSE)
+
+```
+
+```{r}
+tdf_agg <- aggregate(name ~ reportid, data = tdf, toString)
+tdf_agg <- tdf_agg[,-1]
+write.csv(tdf_agg, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/t.csv", quote = FALSE, row.names = FALSE)
+```
+
+```{r}
+library(arules)
+s_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/s.csv", format ="basket", sep = ",")
+
+```
+
+```{r}
+srules <- apriori(s_trans, parameter = list(supp = .03, conf = .5))
+inspect(srules)
+```
+
+```{r}
+
+c_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/c.csv", format ="basket", sep = ",")
+
+```
+
+```{r}
+crules <- apriori(c_trans, parameter = list(supp = .02, conf = .5))
+inspect(crules)
+```
+
+
+```{r}
+
+t_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/t.csv", format ="basket", sep = ",")
+
+```
+
+```{r}
+trules <- apriori(t_trans, parameter = list(supp = .02, conf = .5))
+inspect(crules)
 ```
 
 
