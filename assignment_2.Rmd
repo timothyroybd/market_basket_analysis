@@ -290,13 +290,35 @@ s_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_ba
 
 ```
 
+* After filtering top 20 associations by lift, we can observe the following
+  * Shoulder pain and hip pain have the most high lift (7.055) which means they are 7 times more likely to occur
+  * Neck pain and pelvic pain are also associated strongly
+  * Constipation has a strong association with adominal pain and diarrhea which is intuitive to understand
+  * And more!
+  
 ```{r warning=FALSE}
 srules <- apriori(s_trans, parameter = list(supp = .03, conf = .5))
-inspect(srules)
+srules_sort <- sort(srules, by = "lift", decreasing = TRUE)
+inspect(head(srules_sort, n = 20))
+
+```
+
+Kulczynski Coefficient
+
+```{r warning = FALSE}
+interestMeasure(srules_sort, measure = "Kulczynski", transactions = transactions)
+
+```
+
+
+
+```{r warning = FALSE}
+interestMeasure(srules_sort, measure = "Kulczynski", transactions = transactions)
+
 ```
 
 ```{r echo=FALSE, warning=FALSE}
-plot(srules, method="two-key plot")
+plot(srules_sort, method="two-key plot")
 ```
 
 #### Association alalysis for conditions
@@ -307,9 +329,22 @@ c_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_ba
 
 ```
 
+* Some intersting associations are given in the following
+  * anxiety and chronic fatigue and depression 
+  * irritable bowel syndrome and chronic fatigue
+  * idiopathic hyperinsonmia and deepresion 
+
 ```{r warning=FALSE}
 crules <- apriori(c_trans, parameter = list(supp = .02, conf = .5))
-inspect(crules)
+crules_sort <- sort(crules, by = "lift", decreasing = TRUE)
+inspect(head(crules_sort, n = 20))
+
+```
+Kulczynski Coefficient
+
+```{r warning = FALSE}
+interestMeasure(crules_sort, measure = "Kulczynski", transactions = transactions)
+
 ```
 
 ```{r echo= FALSE, warning=FALSE}
@@ -326,7 +361,16 @@ t_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_ba
 
 ```{r, warning=FALSE}
 trules <- apriori(t_trans, parameter = list(supp = .02, conf = .5))
-inspect(crules)
+
+trules_sort <- sort(trules, by = "lift", decreasing = TRUE)
+inspect(head(trules_sort, n = 20))
+```
+
+Kulczynski Coefficient
+
+```{r warning = FALSE}
+interestMeasure(trules_sort, measure = "Kulczynski", transactions = transactions)
+
 ```
 
 ```{r echo= FALSE, warning=FALSE}
@@ -334,4 +378,17 @@ plot(trules, method="two-key plot")
 ```
 
 
+Kulczynski Coefficient
 
+```{r warning = FALSE}
+interestMeasure(prod_association_rules, measure = "Kulczynski", transactions = transactions)
+
+```
+
+Imbalance Ratio
+The dataset has a very low imbalance
+
+```{r}
+#head(store_df)
+imbalanceRatio(health_df , classAttr = "type")
+```
