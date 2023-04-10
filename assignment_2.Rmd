@@ -10,6 +10,8 @@ library(arules)
 library(skimr)
 library(plyr)
 library(RColorBrewer)
+library(arulesViz)
+library(imbalance)
 
 ```
 ### Task 1 - Product Orders
@@ -28,7 +30,7 @@ store_data <- read.csv("store.csv")
 head(store_data)
 ```
 
-* This data shows information regarding customer's information such as city, country, product purchase, their quantity and sales and other order related information.
+* This data shows information regarding customer such as city, country, product purchase, their quantity and sales and other order related information.
 
 ### a.2 Document and eliminate any data quality issues that you may find (if you find any), i.e., perform the necessary data cleaning.
 
@@ -40,7 +42,7 @@ store_data %>% skim()
 * The data set has 51,290 rows of data which has 25 columns. 13 of columns are character and 12 is numeric.
 * Among numeric columns, only postal code has 41,296 missing values which would not be important for association mining. 
 * The data set has a minimum profit of -6,599.978 which is a negative number. However, profit's value can be negative. 
-* The minimum sales value is surprisingly low (0.444)!
+* The minimum sales value is surprisingly low (0.444)! Not sure what to do about it.
 
 
 ### a.3 Transforming the data 
@@ -52,7 +54,7 @@ Secondly, product qualification would be removed to find more match of products.
 
 Thirdly, using `dplyr` library, product names have been concatenated based on order.id. And afterward, it was saved as a new file named `transactions.csv`. 
 
-```{r}
+```{r warning=FALSE}
 #data frame with order.id and product.name have been created
 sd_ord_prod <- data.frame(store_data$Order.ID, store_data$Product.Name)
 colnames(sd_ord_prod) <- c("order.id", "product.name")
@@ -81,7 +83,7 @@ First of all, order.id and sub.category will be extracted from `store_data` and 
 Secondly, using `dplyr` library, category names have been concatenated based on order.id. And afterward, it was saved as a new file named `cat_transaction.csv`. 
 
 
-```{r}
+```{r warning=FALSE}
 
 sd_order_cat <- data.frame(store_data$Order.ID, store_data$Sub.Category)
 colnames(sd_order_cat) <- c("order.id", "sub.category")
@@ -99,7 +101,7 @@ write.csv(cat_transaction_data, "D:/Education/JKU 2023/Summer/Data Mining/market
 
 In the following the, the `transaction.csv` is being converted to transactions data so that it can be run using the apriori algorithm 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/transactions.csv", format ="basket", sep = ",")
 #summary(tr)
 ```
@@ -107,52 +109,77 @@ tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_
 
 Here it shows the list of top 20 product items by their frequency. 
 
-```{r}
+```{r warning=FALSE}
 itemFrequencyPlot(tr, topN = 20, type ="absolute", col = brewer.pal(8, 'Pastel2'), main ="Absolute Item Frequency Plot")
 ```
 
 In the following an association rule algorithm has been ran with 0.0001 support and .1 confidence. 0.0001 support means that customers bought an item set at least 0.01% of the whole transactions. In this case, this is not a significant. However, if support number is increased more than 0.01%, then the association rules do not reutrn any association. 
 
-```{r}
+```{r warning=FALSE}
 prod_association_rules <- apriori(tr, parameter = list(supp =0.0001, conf = 0.1, maxlen = 10))
 
 
 ```
 
-The apriori algorithm produced 12 item set.They have a very low count and only the top 5 has a relatively high confidence level. Staples are often bought together with items such as chairs, vaccume, xerox, envelop, legal cart, post binders, table. Many of the items that are bought together with staples belong to office supply category. 
+* The apriori algorithm produced 12 item set.They have a very low count and only the top 5 has a relatively high confidence level (0.42-0.75). 
 
-Also, printer and Eldon box and Index Tab are bought together. Interstingly toaster and 3 hole punch are bought together. 
+* **Staples** are often bought together with items such as **chairs, vaccume, xerox, envelop, legal cart, post binders, table.** Many of the items that are bought together with staples belong to office supply category. 
 
-As mentioned, these associations are not strong because their support count is low even for some of them the confidence level is higher. 
+* Also, printer and Eldon box and Index Tab are bought together. Interstingly toaster and 3 hole punch are bought together. 
 
-```{r}
-#filter(store_data, Product.Name == "Staples" )
-```
+* As mentioned, these associations are not strong because their support count is low even for some of them the confidence level is higher. 
+
+* Lift is a measure that shows how likely that bundle purchase will occur. More than 1 shows that it is likely. All the cases have more than 1 lift. Therefore, the are likely to occur. 
 
 
-```{r}
+```{r warning=FALSE}
 inspect(prod_association_rules)
 ```
 
+* Kulczynski coefficient shows the strength of association between two sets of binary data. 1 means that they have perfect association or conditional probability where 0 means that they are independent. 
 
-```{r}
+* From the analysis, it seems that they have a very weak Kulczynski coefficient. 
+
+```{r warning=FALSE}
+interestMeasure(prod_association_rules, measure = "Kulczynski", transactions = transactions)
+```
+
+```{r warning=FALSE}
+plot(prod_association_rules,method="two-key plot")
+
+```
+
+* Since it is quite a low number, it means that dataset is quite imbalanced
+
+```{r warning=FALSE}
+store_df <- as.data.frame(store_data)
+#head(store_df)
+imbalanceRatio(store_df , classAttr = "Product.Name")
+```
+
+
+```{r warning=FALSE}
 cat_tr <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/cat_transactions.csv", format ="basket", sep = ",")
 ```
 
-```{r}
+```{r warning=FALSE}
 cat_association_rules <- apriori(cat_tr, parameter = list(supp =0.0006, conf = 0.5))
 ```
 The following table shows category sets and their frequency with confidence level. 0.6% of all the transactions has Binders category in association with  	{Fasteners, Labels, Machines}, {Appliances, Fasteners, Phones}, {Appliances, Fasteners, Paper}, {Appliances, Art, Fasteners} etc. 
 
-```{r}
+```{r warning=FALSE}
 inspect(cat_association_rules)
+```
+
+```{r warning=FALSE}
+plot(cat_association_rules,method="two-key plot")
 ```
 
 
 
 ## c. Mining Multilevel Association Rule
 
-```{r}
+```{r warning=FALSE}
 library(arules)
 df <- read.csv("store.csv")
 
@@ -182,6 +209,10 @@ inspect(rules)
 
 ```
 
+```{r warning=FALSE}
+plot(rules,method="two-key plot")
+```
+
 
 
 
@@ -191,38 +222,41 @@ inspect(rules)
 
 ### a.1 Familiarize yourself with dataset for product orders
 
-```{r}
+```{r warning=FALSE}
 health_df <- read.csv("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/health.csv")
 
 
 ```
 
-```{r}
+### a.2 Data Preparation
+
+```{r warning=FALSE}
 library(dplyr)
 #creating symptoms data frame
 sdf <- filter(health_df, type == "S")
 head(sdf, 10)
 ```
 
-```{r}
+```{r warning=FALSE}
 #conditions data frame
 cdf <- filter(health_df, type == "C")
 head(cdf,12)
 ```
 
-```{r}
+```{r warning=FALSE}
 #treatment dataframe
 tdf <- filter(health_df, type == "T")
 head(tdf, 12)
 ```
 
-```{r}
+```{r warning=FALSE}
 # symptoms aggregation
 sdf$reportid <- as.character(sdf$reportid)
 
 ```
 
-```{r}
+Aggregating all the symptoms based on report id and saving the csv
+```{r warning=FALSE}
 sdf_agg <- aggregate(name ~ reportid, data = sdf, toString)
 
 sdf_agg <- sdf_agg[,-1]
@@ -230,7 +264,9 @@ write.csv(sdf_agg, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analy
 
 ```
 
-```{r}
+Aggregating all the conditions based on report id and saving the csv
+
+```{r warning=FALSE}
 cdf_agg <- aggregate(name ~ reportid, data = cdf, toString)
 
 cdf_agg <- cdf_agg[,-1]
@@ -238,44 +274,64 @@ write.csv(cdf_agg, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analy
 
 ```
 
-```{r}
+Aggregating all the treatments based on report id and saving the csv
+
+```{r warning=FALSE}
 tdf_agg <- aggregate(name ~ reportid, data = tdf, toString)
 tdf_agg <- tdf_agg[,-1]
 write.csv(tdf_agg, "D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/t.csv", quote = FALSE, row.names = FALSE)
 ```
 
-```{r}
+#### Association alalysis for symptoms
+
+```{r warning=FALSE, message= FALSE }
 library(arules)
 s_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/s.csv", format ="basket", sep = ",")
 
 ```
 
-```{r}
+```{r warning=FALSE}
 srules <- apriori(s_trans, parameter = list(supp = .03, conf = .5))
 inspect(srules)
 ```
 
-```{r}
+```{r echo=FALSE, warning=FALSE}
+plot(srules, method="two-key plot")
+```
+
+#### Association alalysis for conditions
+
+```{r warning=FALSE, message= FALSE}
 
 c_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/c.csv", format ="basket", sep = ",")
 
 ```
 
-```{r}
+```{r warning=FALSE}
 crules <- apriori(c_trans, parameter = list(supp = .02, conf = .5))
 inspect(crules)
 ```
 
+```{r echo= FALSE, warning=FALSE}
+plot(crules, method="two-key plot")
+```
 
-```{r}
+#### Association alalysis for treatments
+
+```{r warning=FALSE, message= FALSE}
 
 t_trans <- read.transactions("D:/Education/JKU 2023/Summer/Data Mining/market_basket_analysis/t.csv", format ="basket", sep = ",")
 
 ```
 
-```{r}
+```{r, warning=FALSE}
 trules <- apriori(t_trans, parameter = list(supp = .02, conf = .5))
 inspect(crules)
 ```
+
+```{r echo= FALSE, warning=FALSE}
+plot(trules, method="two-key plot")
+```
+
 
 
